@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -16,15 +17,22 @@ namespace Tela_design
     {
         private IconButton currentBtn;
         private Panel leftBorderBtn;
+        private Form currentChildForm;
+
         public Form1()
         {
             InitializeComponent();
             leftBorderBtn = new Panel();
             leftBorderBtn.Size = new Size(7, 60);
             panelMenu.Controls.Add(leftBorderBtn);
+
+            //form
+
+            this.Text = string.Empty;
+            this.ControlBox = false;
+            this.DoubleBuffered= true;
+            this.MaximizedBounds = Screen.FromHandle(this.Handle).WorkingArea;
         }
-
-
 
         private struct RGBColors
         {
@@ -34,18 +42,16 @@ namespace Tela_design
             public static System.Drawing.Color color4 = System.Drawing.Color.FromArgb(95,77,221);
             public static System.Drawing.Color color5 = System.Drawing.Color.FromArgb(249,88,155);
             public static System.Drawing.Color color6 = System.Drawing.Color.FromArgb(24,161,251);
-        }
-         
-
-
+        }       
 
         private void ActivateButton(object senderBtn, System.Drawing.Color color)
         {
             if (senderBtn != null)
             {
-
+                // sempre que é pressionado, desabilita o botão anterior que estava na memoria
                 DisableButton();
-                //button
+
+                //button => modifica o botão que foi clicado agora
 
                 currentBtn = (IconButton)senderBtn;
                 currentBtn.BackColor = System.Drawing.Color.FromArgb(37, 36, 81);
@@ -61,6 +67,10 @@ namespace Tela_design
                 leftBorderBtn.Location = new Point(0, currentBtn.Location.Y);
                 leftBorderBtn.Visible = true;
                 leftBorderBtn.BringToFront();
+
+                iconCurrentChildForm.IconChar = currentBtn.IconChar;
+                iconCurrentChildForm.IconColor = color;
+                lblTitleChildForm.Text = currentBtn.Text;
             }
         }
 
@@ -77,34 +87,94 @@ namespace Tela_design
             }
         }
 
+        private void OpenChildForm(Form childform)
+        {
+            if(currentChildForm != null)
+            {
+                //open only form
+                currentChildForm.Close();
+            }
+
+            currentChildForm= childform;
+            childform.TopLevel = false;
+            childform.FormBorderStyle = FormBorderStyle.None;
+            childform.Dock = DockStyle.Fill;
+            panelDesktop.Controls.Add(childform);
+            panelDesktop.Tag = childform;
+            childform.BringToFront();
+            childform.Show();
+            lblTitleChildForm.Text = childform.Text;
+        }
+
         private void btnDashboard_Click(object sender, EventArgs e)
         {
             ActivateButton(sender, RGBColors.color1);
+            OpenChildForm(new FormDashborad());
         }
 
         private void btnProducts_Click(object sender, EventArgs e)
         {
             ActivateButton(sender, RGBColors.color2);
+            OpenChildForm(new FormProdutos());
         }
 
         private void btnCategorias_Click(object sender, EventArgs e)
         {
             ActivateButton(sender, RGBColors.color3);
+            OpenChildForm(new FormCategoria());
         }
 
         private void btnFinanceiro_Click(object sender, EventArgs e)
         {
             ActivateButton(sender, RGBColors.color4);
+            OpenChildForm(new FormFinanceiro());
         }
 
         private void btnMarketing_Click(object sender, EventArgs e)
         {
             ActivateButton(sender, RGBColors.color5);
+            OpenChildForm(new FormMarketing());
         }
 
         private void btnSobre_Click(object sender, EventArgs e)
         {
             ActivateButton(sender, RGBColors.color6);
+            OpenChildForm(new FormSobre());
+        }
+
+        private void btnHome_Click(object sender, EventArgs e)
+        {
+            if (currentChildForm != null)
+            {
+                currentChildForm.Close();
+            }
+            Reset();
+        }
+
+        private void Reset()
+        {
+            DisableButton();
+            leftBorderBtn.Visible = false;
+            iconCurrentChildForm.IconChar = IconChar.Home;
+            iconCurrentChildForm.IconColor = System.Drawing.Color.MediumPurple;
+            lblTitleChildForm.Text = "Home";
+        }
+
+
+
+
+        // permite mudar a posição do form através do panel bar e sem a barra nativa do form
+
+        [DllImport("user32.dll", EntryPoint = "ReleaseCapture")]
+        private extern static void ReleaseCapture();
+        [DllImport("user32.dll", EntryPoint = "SendMessage")]
+        private extern static void SendMessage(System.IntPtr hWnd, int wMsg, int wParam, int lParam);
+
+        private void panelTitleBar_MouseDown(object sender, MouseEventArgs e)
+        {
+            ReleaseCapture();
+            SendMessage(this.Handle, 0x112, 0xf012, 0);
+
         }
     }
 }
